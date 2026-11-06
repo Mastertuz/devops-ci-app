@@ -14,7 +14,8 @@ env:
   IMAGE_NAME: ghcr.io/${{ github.repository }}
 
 # Временно: GitHub-hosted runner недоступен (блокировка биллинга аккаунта),
-# задания выполняет self-hosted runner. Для возврата: runs-on: ubuntu-latest.
+# задания выполняет self-hosted runner на macOS: вместо setup-python используется
+# venv на Python 3.12 из Homebrew. Для возврата: runs-on: ubuntu-latest и setup-python.
 jobs:
   lint:
     runs-on: [self-hosted, macOS, ARM64]
@@ -22,22 +23,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            app/requirements.txt
-            requirements-dev.txt
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r app/requirements.txt -r requirements-dev.txt
+          /opt/homebrew/bin/python3.12 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r app/requirements.txt -r requirements-dev.txt
 
       - name: Pylint
-        run: python -m pylint app --score=no
+        run: .venv/bin/python -m pylint app --score=no
 
   test:
     needs: lint
@@ -46,22 +39,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: |
-            app/requirements.txt
-            requirements-dev.txt
-
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -r app/requirements.txt -r requirements-dev.txt
+          /opt/homebrew/bin/python3.12 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install -r app/requirements.txt -r requirements-dev.txt
 
       - name: Unit tests
-        run: python -m pytest -q
+        run: .venv/bin/python -m pytest -q
 
   image:
     needs: test
